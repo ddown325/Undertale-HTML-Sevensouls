@@ -38,13 +38,18 @@ After the data downloads you pick a SOUL:
 | JUSTICE | yellow | Yellow heart |
 
 For any non-determination soul:
-- The battle SOUL (and every place `spr_heart` is used — shops, dates, game
-  over, mode restores) uses that soul's heart sprite.
-- **Flowey becomes a "save point":** his friendliness pellets can no longer
-  hurt you, the kill-ring phase is cut short, and the vanilla rescue sequence
-  (full heal + Toriel's fireball + Flowey flees) kicks in early, so Toriel's
-  story continues as normal.
-- The intro dialogue is rewritten — Flowey notices your soul color.
+- The battle SOUL, the menu/shop cursor hearts (`spr_heart` + `spr_heartsmall`)
+  and every place they are used use that soul's heart sprite.
+- **Flowey notices your soul color** — the whole intro (the "Howdy" talk, the
+  SOUL speech, the pellet pitch, the meltdown) is rewritten per soul.
+- **The pellets refuse to touch you:** the friendliness pellets scatter away
+  from your SOUL instead of homing in (and they can never hurt you).
+- **Flowey skips the kill-ring / "DIE" phase entirely** — after his final
+  "I see how it is, {jab}." rant he just flies off, and Toriel's cutscene
+  plays as normal (with a soul-specific line).
+- **Save points become Flowey:** the star sprite is replaced by a bobbing
+  Flowey head, and all 40 save-point flavor texts fill you with your soul's
+  trait instead of determination ("...filling you with patience.").
 - **The Omega Flowey fight always uses the red determination soul**
   (`obj_vsflowey_heart` uses `spr_ourheart`, which is untouched).
 
@@ -63,20 +68,27 @@ SPRT/TPAG chunks and the reference chains — to compute them). Before the
 GameMaker runner boots, `mod/mod.js` applies the chosen soul's patch list to
 the merged `game.unx` ArrayBuffer in memory:
 
-- **Soul texture:** `spr_heart`'s two texture-page-item pointers are
-  redirected to the chosen soul sprite's entries (8 bytes).
+- **Soul textures:** `spr_heart`'s and `spr_heartsmall`'s texture-page-item
+  pointers are redirected to the chosen soul sprite's entries (battle SOUL,
+  menu/shop cursors).
+- **Save points:** `spr_savepoint`'s two texture pointers are redirected to
+  `spr_flowey`'s frames (animated Flowey-head save point).
 - **Dialogue:** same-or-shorter string replacements, NUL-padded to the old
   record space (the runtime reads strings as C strings).
-- **Flowey behavior:** the pellet collision handler's first branch is changed
-  from `bf` to `b` (unconditional skip — pellets do nothing), and the
-  kill-ring timer `alarm[9]` is shortened from 150 to 45 frames so Toriel's
-  fireball interrupts it almost immediately (the fireball path also fully
-  heals you, hence "save point").
+- **Pellet behavior:** the pellet collision handler's first branch is changed
+  from `bf` to `b` (unconditional skip — pellets do nothing), and the homing
+  speed constant in `obj_friendlypellet_Step_0` is flipped from `0.1` to
+  `-1.5`, so the pellets accelerate *away* from your SOUL and leave the room
+  (which is also what advances the battle state machine).
+- **Flowey flees:** in `obj_floweybattle1_Alarm_8`, `conversation = 12`
+  (the kill-ring phase) is changed to `conversation = 17` (the fly-away
+  physics), so the battle ends with Flowey NOPE-ing out after his rant and
+  Toriel's cutscene plays normally.
 - **Credits:** the `PORT BY …` string is replaced and the `KeyPress 32`
   handler is turned into a jump-to-end no-op.
 
 No 100 MB re-uploads needed — the original game parts stay byte-identical
-and the mod is ~8 KB of patches applied at load time.
+and the mod is ~63 KB of patches applied at load time.
 
 ## Files
 - `mod/mod.js` — patch engine + soul selector UI

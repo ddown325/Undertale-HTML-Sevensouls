@@ -16,32 +16,32 @@
     },
     {
       id: 'patience', name: 'PATIENCE', color: '#00E5FF', glow: 'rgba(0,229,255,0.45)',
-      desc: 'A cyan SOUL. Flowey wants nothing to do with a soul that simply waits him out.',
+      desc: 'A cyan SOUL. Flowey wants nothing to do with a soul that simply waits him out. Even the pellets refuse to touch you.',
       tag: 'flowey flees'
     },
     {
       id: 'bravery', name: 'BRAVERY', color: '#FF9A00', glow: 'rgba(255,154,0,0.45)',
-      desc: 'An orange SOUL. Run headfirst into everything. The pellets will not hurt you.',
+      desc: 'An orange SOUL. Run headfirst into everything. The pellets will scatter before you land a hit.',
       tag: 'flowey flees'
     },
     {
       id: 'integrity', name: 'INTEGRITY', color: '#2E6BFF', glow: 'rgba(46,107,255,0.45)',
-      desc: 'A blue SOUL. Honest to a fault. The flower sees right through you.',
+      desc: 'A blue SOUL. Honest to a fault. The flower sees right through you... and wants no part of what he finds.',
       tag: 'flowey flees'
     },
     {
       id: 'perseverance', name: 'PERSEVERANCE', color: '#B400FF', glow: 'rgba(180,0,255,0.45)',
-      desc: 'A purple SOUL. You do not know when to quit. Neither does he, apparently.',
+      desc: 'A purple SOUL. You do not know when to quit. Flowey gives up on you before you get the chance.',
       tag: 'flowey flees'
     },
     {
       id: 'kindness', name: 'KINDNESS', color: '#00E436', glow: 'rgba(0,228,54,0.45)',
-      desc: 'A green SOUL. Care for others, and they will care for you. Flowey is disgusted.',
+      desc: 'A green SOUL. Care for others, and they will care for you. Flowey is thoroughly disgusted.',
       tag: 'flowey flees'
     },
     {
       id: 'justice', name: 'JUSTICE', color: '#FFE000', glow: 'rgba(255,224,0,0.45)',
-      desc: 'A yellow SOUL. Every deed gets its verdict, even down here.',
+      desc: 'A yellow SOUL. Every deed gets its verdict, even down here. The verdict on you: not worth the trouble.',
       tag: 'flowey flees'
     }
   ];
@@ -127,6 +127,7 @@
     ui.desc = document.getElementById('ssDesc');
     ui.tag = document.getElementById('ssTag');
     ui.prev = document.getElementById('ssCurrent');
+    ui.confirmBtn = document.getElementById('ssConfirm');
     ui.hearts.innerHTML = '';
     SOULS.forEach(function (s, i) {
       var d = document.createElement('button');
@@ -134,14 +135,29 @@
       d.type = 'button';
       d.innerHTML = heartSVG(s.color, 44);
       d.title = s.name;
-      d.addEventListener('click', function () { if (selIndex === i) { confirm(); } else { move(i - selIndex); } });
+      d.style.color = s.color;   /* currentColor glow in CSS */
+      d.addEventListener('click', function (e) {
+        d.blur();                /* don't steal keyboard focus */
+        if (selIndex === i) { confirm(); } else { move(i - selIndex); }
+      });
       ui.hearts.appendChild(d);
     });
+    if (ui.confirmBtn) {
+      ui.confirmBtn.addEventListener('click', function () {
+        ui.confirmBtn.blur();
+        confirm();
+      });
+    }
     document.addEventListener('keydown', function (e) {
       if (ui.root.hidden) return;
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { move(-1); e.preventDefault(); }
-      else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { move(1); e.preventDefault(); }
-      else if (e.key === 'Enter' || e.key === 'z' || e.key === 'Z' || e.key === ' ') { confirm(); e.preventDefault(); }
+      var k = e.key;
+      if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'a' || k === 'A') { move(-1); e.preventDefault(); }
+      else if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'd' || k === 'D') { move(1); e.preventDefault(); }
+      else if (k === 'Enter' || k === 'z' || k === 'Z' || k === ' ') {
+        if (e.repeat) { e.preventDefault(); return; }   /* ignore held key auto-repeat */
+        confirm();
+        e.preventDefault();
+      }
     });
     updateSel();
   }
@@ -167,9 +183,15 @@
     ui.desc.textContent = s.desc;
     ui.tag.textContent = s.tag.toUpperCase();
     ui.tag.style.color = s.color;
+    if (ui.confirmBtn) {
+      ui.confirmBtn.style.color = s.color;
+      ui.confirmBtn.style.borderColor = s.color;
+      ui.confirmBtn.style.boxShadow = '0 0 14px ' + s.glow;
+    }
   }
 
   function confirm() {
+    if (ui.root.hidden) return;   /* already confirmed */
     var s = SOULS[selIndex];
     beep(880, 0.06, 0);
     beep(1174, 0.09, 0.07);
