@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+  <base href="./">
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0" />
+    <link rel="icon" type="x-icon" href="favicon.png">
+    <title>UNDERTALE</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <canvas
+      class="emscripten"
+      id="canvas"
+      oncontextmenu="event.preventDefault()"
+      tabindex="-1">
+    </canvas>
+    <div id="pauseMenuContainer" hidden>
+      <div id="pauseMenuBorder">
+        <div id="pauseMenu">
+          <button id="resumeButton" onclick="resume()">
+            Resume
+          </button>
+          <button id="quitButton" onclick="quitIfSupported()">
+            Back
+          </button>
+        </div>
+        </div>
+    </div>
+
+    <!-- legacy elements kept for the GameMaker loader (index.js) -->
+    <div class="loading" id="legacyLoading" hidden>
+      <div class="spinner" id="spinner" hidden></div>
+      <div class="emscripten" id="status"></div>
+      <progress value="0" max="100" id="progress" hidden="1"></progress>
+    </div>
+    <div id="message-container">
+      <div id="messages">
+      </div>
+    </div>
+    <div id="output-container" hidden>
+      <textarea id="output" rows="8"></textarea>
+    </div>
+
+    <!-- ============ new loading screen ============ -->
+    <div id="utLoader">
+      <div class="ut-inner">
+        <div class="ut-title">UNDERTALE</div>
+        <div class="ut-sub">SEVEN SOULS EDITION</div>
+        <div class="ut-heart-wrap">
+          <svg id="utHeart" viewBox="0 0 11 10" shape-rendering="crispEdges" aria-hidden="true">
+            <defs>
+              <clipPath id="utHeartClip">
+                <rect x="2" y="0" width="2" height="1"/><rect x="7" y="0" width="2" height="1"/>
+                <rect x="1" y="1" width="4" height="1"/><rect x="6" y="1" width="4" height="1"/>
+                <rect x="0" y="2" width="11" height="3"/>
+                <rect x="1" y="5" width="9" height="1"/><rect x="2" y="6" width="7" height="1"/>
+                <rect x="3" y="7" width="5" height="1"/><rect x="4" y="8" width="3" height="1"/>
+                <rect x="5" y="9" width="1" height="1"/>
+              </clipPath>
+            </defs>
+            <g fill="#20060a">
+              <rect x="2" y="0" width="2" height="1"/><rect x="7" y="0" width="2" height="1"/>
+              <rect x="1" y="1" width="4" height="1"/><rect x="6" y="1" width="4" height="1"/>
+              <rect x="0" y="2" width="11" height="3"/>
+              <rect x="1" y="5" width="9" height="1"/><rect x="2" y="6" width="7" height="1"/>
+              <rect x="3" y="7" width="5" height="1"/><rect x="4" y="8" width="3" height="1"/>
+              <rect x="5" y="9" width="1" height="1"/>
+            </g>
+            <g clip-path="url(#utHeartClip)">
+              <rect id="utHeartFill" x="0" y="10" width="11" height="10" fill="#FF0000"/>
+            </g>
+          </svg>
+        </div>
+        <div class="ut-stage"><span id="utStage">Preparing...</span></div>
+        <div class="ut-meter"><div id="utMeterFill"></div></div>
+        <div class="ut-pct" id="utPct">0%</div>
+        <div class="ut-tip" id="utTip"></div>
+        <button id="utRetry" type="button" hidden>RETRY</button>
+        <div class="ut-credit">port by Kantasu</div>
+      </div>
+    </div>
+
+    <!-- ============ soul selector ============ -->
+    <div id="soulSelect" hidden>
+      <div class="ut-inner">
+        <div class="ut-title small">CHOOSE YOUR SOUL</div>
+        <div id="ssCurrent" class="ss-current" hidden></div>
+        <div id="ssHearts"></div>
+        <div id="ssName">DETERMINATION</div>
+        <div id="ssTag" class="ss-tag">VANILLA</div>
+        <div id="ssDesc" class="ss-desc"></div>
+        <div class="ss-hint">&larr; &rarr; move &nbsp;&middot;&nbsp; Z / Enter confirm &nbsp;&middot;&nbsp; click a heart twice</div>
+        <div class="ut-credit">port by Kantasu</div>
+      </div>
+    </div>
+
+    <script src="savesync.js"></script>
+    <script src="mod/mod.js"></script>
+    <script>
+    (function () {
+      'use strict';
+      var PARTS = ['game.unx.part1', 'game.unx.part2', 'game.unx.part3', 'game.unx.part4', 'game.unx.part5'];
+      var TIPS = [
+        '* Stay determined...',
+        '* The flower is watching.',
+        '* Determination is not always enough. Choose wisely.',
+        '* In this world, it\'s kill or BE killed.',
+        '* Down here, LOVE is shared through little white... pellets.',
+        '* Seven souls. One mountain. Zero refunds.',
+        '* You can change your soul by reloading the page.',
+        '* (The Omega Flowey fight always uses the red SOUL.)',
+        '* Hold X during battle to focus your SOUL.',
+        '* Press Z to talk to things. Flowers included.'
+      ];
+
+      var el = {
+        loader: document.getElementById('utLoader'),
+        stage: document.getElementById('utStage'),
+        pct: document.getElementById('utPct'),
+        tip: document.getElementById('utTip'),
+        fill: document.getElementById('utHeartFill'),
+        meter: document.getElementById('utMeterFill'),
+        retry: document.getElementById('utRetry'),
+        legacy: document.getElementById('legacyLoading'),
+        soulSelect: document.getElementById('soulSelect')
+      };
+
+      var tipTimer = setInterval(function () {
+        el.tip.textContent = TIPS[Math.floor(Math.random() * TIPS.length)];
+      }, 4000);
+      el.tip.textContent = TIPS[Math.floor(Math.random() * TIPS.length)];
+
+      function setProgress(frac, stageText) {
+        frac = Math.max(0, Math.min(1, frac));
+        el.fill.setAttribute('y', String(10 - 10 * frac));
+        el.meter.style.width = (frac * 100).toFixed(1) + '%';
+        el.pct.textContent = Math.round(frac * 100) + '%';
+        if (stageText) el.stage.textContent = stageText;
+      }
+
+      function fail(msg) {
+        clearInterval(tipTimer);
+        el.stage.textContent = msg;
+        el.stage.classList.add('err');
+        el.retry.hidden = false;
+      }
+
+      el.retry.addEventListener('click', function () { location.reload(); });
+
+      /* fetch with progress + one automatic retry */
+      function fetchPart(url, onProgress, attempt) {
+        attempt = attempt || 0;
+        return fetch(url, { cache: 'force-cache' }).then(function (resp) {
+          if (!resp.ok) throw new Error('HTTP ' + resp.status + ' for ' + url);
+          var len = +(resp.headers.get('Content-Length') || 0);
+          if (!resp.body || !len || typeof resp.body.getReader !== 'function') {
+            return resp.arrayBuffer();
+          }
+          var reader = resp.body.getReader();
+          var chunks = [], received = 0;
+          function pump() {
+            return reader.read().then(function (r) {
+              if (r.done) {
+                var out = new Uint8Array(received);
+                var o = 0;
+                for (var i = 0; i < chunks.length; i++) { out.set(chunks[i], o); o += chunks[i].length; }
+                return out.buffer;
+              }
+              chunks.push(r.value);
+              received += r.value.length;
+              onProgress(received, len);
+              return pump();
+            });
+          }
+          return pump();
+        }).catch(function (err) {
+          if (attempt < 1) {
+            console.warn('retrying', url, err);
+            return fetchPart(url, onProgress, attempt + 1);
+          }
+          throw err;
+        });
+      }
+
+      function downloadParts() {
+        var totalKnown = PARTS.length, done = 0, buffer = null;
+        var chain = Promise.resolve();
+        PARTS.forEach(function (p, idx) {
+          chain = chain.then(function () {
+            setProgress(done / totalKnown, 'Downloading game data (' + (idx + 1) + '/' + totalKnown + ')...');
+            return fetchPart(p, function (recv, len) {
+              var partFrac = len ? recv / len : 0;
+              setProgress((done + partFrac) / totalKnown,
+                'Downloading game data (' + (idx + 1) + '/' + totalKnown + ')');
+            }).then(function (buf) {
+              if (!buffer) {
+                buffer = buf;
+              } else {
+                var merged = new Uint8Array(buffer.byteLength + buf.byteLength);
+                merged.set(new Uint8Array(buffer), 0);
+                merged.set(new Uint8Array(buf), buffer.byteLength);
+                buffer = merged.buffer;
+              }
+              done++;
+            });
+          });
+        });
+        return chain.then(function () { return buffer; });
+      }
+
+      function bootRunner(gameBuffer) {
+        /* apply the mod BEFORE the runner ever sees the data */
+        var soulId = window.UndertaleMod.getStoredSoul();
+        var n = window.UndertaleMod.applyPatches(gameBuffer, soulId);
+        console.log('[Seven Souls] soul=' + soulId + ', ' + n + ' patches applied');
+
+        var blob = new Blob([gameBuffer]);
+        var gameUnxUrl = URL.createObjectURL(blob);
+
+        var originalFetch = window.fetch;
+        window.fetch = async function (...args) {
+          let [url, options] = args;
+          if (typeof url === 'string' && url.includes('game.unx')) {
+            url = gameUnxUrl;
+          } else if (url instanceof Request && url.url.includes('game.unx')) {
+            url = new Request(gameUnxUrl, url);
+          }
+          return originalFetch.call(this, url, options);
+        };
+        var originalOpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+          if (url.includes('game.unx')) url = gameUnxUrl;
+          return originalOpen.call(this, method, url, ...rest);
+        };
+
+        /* hide our overlay once the game is actually running */
+        var origLog = console.log.bind(console);
+        console.log = function (t) {
+          if (typeof t === 'string' && t.indexOf('Entering main loop') >= 0) {
+            console.log = origLog;
+            clearInterval(tipTimer);
+            el.loader.classList.add('hide');
+            el.soulSelect.classList.add('hide');
+            setTimeout(function () { el.loader.style.display = 'none'; }, 700);
+          }
+          origLog.apply(console, arguments);
+        };
+
+        /* hand over to the GameMaker loader; its status text goes to #status */
+        el.legacy.hidden = false;
+        el.stage.textContent = 'Starting runner...';
+        setProgress(1, 'Starting runner...');
+
+        var s1 = document.createElement('script');
+        s1.src = 'index.js';
+        document.body.appendChild(s1);
+        var s2 = document.createElement('script');
+        s2.src = 'runner.js';
+        document.body.appendChild(s2);
+      }
+
+      function registerServiceWorker() {
+        /* enables offline caching of the game parts (was dead code upstream) */
+        if (!('serviceWorker' in navigator)) return Promise.resolve();
+        return navigator.serviceWorker.register('sw.js')
+          .then(function (reg) { return navigator.serviceWorker.ready; })
+          .catch(function (e) { console.warn('[Seven Souls] service worker unavailable:', e); });
+      }
+
+      function start() {
+        setProgress(0, 'Preparing...');
+        registerServiceWorker().then(function () {
+          window.UndertaleMod.loadPatches(function (err) {
+            if (err) { fail('Could not load mod data (mod/patches.json).'); return; }
+            downloadParts().then(function (gameBuffer) {
+              if (!gameBuffer || gameBuffer.byteLength < 1000) throw new Error('empty game data');
+              setProgress(1, 'Data ready.');
+              var stored = window.UndertaleMod.getStoredSoul();
+              var known = window.UndertaleMod.SOULS.some(function (s) { return s.id === stored; });
+              window.UndertaleMod.showSelector(known ? stored : null, function (chosen) {
+                bootRunner(gameBuffer);
+              });
+            }).catch(function (err) {
+              console.error(err);
+              fail('Download failed. Check your connection, then retry.');
+            });
+          });
+        });
+      }
+
+      window.UndertaleMod.buildSelector();
+      start();
+    })();
+    </script>
+  </body>
+</html>

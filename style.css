@@ -1,0 +1,485 @@
+      @-webkit-keyframes rotation {
+        from {
+          -webkit-transform: rotate(0deg);
+        }
+
+        to {
+          -webkit-transform: rotate(360deg);
+        }
+      }
+
+      @-moz-keyframes rotation {
+        from {
+          -moz-transform: rotate(0deg);
+        }
+
+        to {
+          -moz-transform: rotate(360deg);
+        }
+      }
+
+      @-o-keyframes rotation {
+        from {
+          -o-transform: rotate(0deg);
+        }
+
+        to {
+          -o-transform: rotate(360deg);
+        }
+      }
+
+      @keyframes rotation {
+        from {
+          transform: rotate(0deg);
+        }
+
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      html {
+        background: #FFFFFF;
+      }
+
+      body {
+        font-family: arial;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
+        min-height: fill-available;
+        min-height: 100vh; /* Otherwise contents can be covered by an address bar in Safari on iOS 15 */
+        min-width: 100vw;
+        background: radial-gradient(
+          56.63% 56.63% at 50% 43.37%,
+          transparent 0%,
+          transparent 100%
+        );
+                background-color: black;
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden;
+                place-items: center;
+      }
+
+      body.scrollingDisabled {
+        overflow: hidden;
+      }
+
+      .emscripten {
+        padding-right: 0;
+        display: block;
+      }
+
+      div.emscripten {
+        text-align: center;
+                font-family: "Lucida Console", Monaco, monospace;
+      }
+
+      /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
+      canvas.emscripten {
+        display: none;
+        background-color: black;
+        position: flex;
+        transition: opacity 5s ease-in;
+        -webkit-transition: opacity 5s ease-in;
+        opacity: 0;
+        filter: blur(0) grayscale(0);
+        image-rendering: optimizeSpeed;             /* Older versions of FF          */
+        image-rendering: -moz-crisp-edges;          /* FF 6.0+                       */
+        image-rendering: -webkit-optimize-contrast; /* Safari                        */
+        image-rendering: -o-crisp-edges;            /* OS X & Windows Opera (12.02+) */
+        image-rendering: pixelated;                 /* Awesome future-browsers       */
+        -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
+      }
+
+      canvas.active {
+        animation-name: fadeIn;
+        animation-duration: 2s;
+        opacity: 1;
+      }
+
+      canvas.paused {
+        animation-name: blur;
+        animation-duration: 0.5s;
+        filter: blur(2px) grayscale(1);
+      }
+
+      canvas.unpaused {
+        animation-name: none;
+      }
+
+      canvas.animatedSizeTransitions {
+        transition: width 0.3s ease, height 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        0% {
+          opacity: 0;
+        }
+
+        100% {
+          opacity: 1;
+        }
+      }
+
+      @keyframes blur {
+        0% {
+          filter: blur(0) grayscale(0);
+        }
+
+        100% {
+          filter: blur(2px) grayscale(1);
+        }
+      }
+
+      .spinner {
+        height: 30px;
+        width: 30px;
+
+        -webkit-animation: rotation 0.8s linear infinite;
+        -moz-animation: rotation 0.8s linear infinite;
+        -o-animation: rotation 0.8s linear infinite;
+        animation: rotation 0.8s linear infinite;
+
+        border: 5px solid #bdff00;
+        border-top: 5px solid #719900;
+        border-radius: 100%;
+      }
+
+      #status {
+        display: inline-block;
+        vertical-align: top;
+        font-weight: bold;
+        color: white;
+      }
+
+      #progress {
+        width: 250px;
+        height: 10px;
+        -webkit-appearance: none;
+        appearance: none;
+        padding: 5px;
+      }
+
+      /* Determines the style of the background of the progress bar */
+      progress[value]::-webkit-progress-bar {
+        background-color: #8492a6;
+        height: 10px;
+        border-radius: 15px;
+      }
+      /* Determines the style of the completed part of the progress bar */
+      progress[value]::-webkit-progress-value {
+        background-image: -webkit-linear-gradient(left, #719900, #bdff00);
+        height: 10px;
+        border-radius: 15px;
+      }
+
+      div.loading {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        pointer-events: none;
+      }
+      div.loading > * {
+        padding: 10px;
+        margin: 10px;
+      }
+
+      .output-container {
+        text-align: center;
+        margin-top: auto;
+      }
+      .output-button {
+        border: none;
+        width: 200px;
+        height: 25px;
+        margin: 5px;
+        border-radius: 5px;
+        cursor: pointer;
+        background-color: black;
+        color: white;
+                outline-color: #20c20e;
+                outline-style: dashed;
+        font-family: "Lucida Console", Monaco, monospace;
+      }
+
+      #output {
+        display: none;
+        height: 200px;
+        background-color: black;
+        color: white;
+        font-family: "Lucida Console", Monaco, monospace;
+        outline: none;
+        border: none;
+        padding: 0;
+        width: 100%;
+      }
+
+      #message-container {
+        display: none;
+        min-height: 50px;
+        background-color: rgba(20, 20, 20, 0.5);
+        outline: none;
+        border: none;
+        padding: 0;
+        width: 100%;
+        position: absolute;
+        top: 0;
+      }
+
+      #messages {
+        margin-left: 50px;
+        color: white;
+        font-family: "Lucida Console", Monaco, monospace;
+        outline: none;
+        border: none;
+        padding: 0;
+      }
+
+      img.qrCode {
+         opacity: 1.0;
+         width: 50%;
+         height: 50%;
+      }
+
+      #pauseMenuContainer {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #pauseMenuContainer[hidden] {
+        display: none !important;
+        opacity: 0;
+      }
+
+      #pauseMenuBorder {
+        background: linear-gradient(135deg, #FA1E4E, transparent 40%);
+        padding: 1px;
+        border-radius: 4px;
+        clip-path: polygon(10.5px 0, 100% 0, 100% 100%, 0 100%, 0 10.5px);
+        width: 70vw;
+        max-width: 400px;
+      }
+
+      #pauseMenu {
+        display: flex;
+        flex-direction: column;
+        padding: 60px 30px 60px 30px;
+        background: linear-gradient(180deg, #2E273F 16.15%, rgba(46, 39, 63, 0.79) 56.25%, #2E273F 91.15%);
+        border-radius: 4px;
+        clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px);
+        animation-name: fadeIn;
+        animation-duration: 0.5s;
+        opacity: 1;
+      }
+
+      #pauseMenu button {
+        font-weight: 500;
+        font-size: 17px;
+        color: white;
+        background: #FA1E4E;
+        border: 1px solid #FA1E4E;
+        border-radius: 6px;
+        padding: 12px 24px;
+        margin: 5px 0;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+
+      #pauseMenu button#quitButton {
+        background: #FA1E4E40;
+      }
+
+      #pauseMenu button:hover {
+        filter: brightness(1.15);
+      }
+
+      #pauseMenu button:active {
+        filter: brightness(0.85);
+      }
+
+      #pauseMenu button[hidden] {
+        display: none;
+      }
+
+      /* =====================================================
+         Seven Souls edition loading screen + soul selector
+         port by Kantasu
+         ===================================================== */
+      #utLoader, #soulSelect {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity .7s ease;
+      }
+      #utLoader.hide, #soulSelect.hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .ut-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        font-family: "Courier New", "Lucida Console", Monaco, monospace;
+        color: #fff;
+        padding: 24px;
+        max-width: 92vw;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .ut-title {
+        font-size: clamp(28px, 6vw, 52px);
+        letter-spacing: .35em;
+        font-weight: 700;
+        color: #fff;
+        text-shadow: 0 0 18px rgba(255,255,255,.35);
+      }
+      .ut-title.small {
+        font-size: clamp(18px, 3.4vw, 30px);
+        letter-spacing: .22em;
+        margin-bottom: 26px;
+      }
+      .ut-sub {
+        font-size: clamp(11px, 1.7vw, 15px);
+        letter-spacing: .55em;
+        color: #b5b5b5;
+        margin: 8px 0 34px;
+      }
+      .ut-heart-wrap {
+        width: clamp(96px, 15vw, 140px);
+        margin-bottom: 22px;
+        filter: drop-shadow(0 0 14px rgba(255,0,0,.35));
+        animation: soulPulse 1.6s ease-in-out infinite;
+      }
+      .ut-heart-wrap svg { width: 100%; height: auto; display: block; }
+      @keyframes soulPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.06); }
+      }
+      .ut-stage {
+        font-size: clamp(13px, 2vw, 17px);
+        color: #e8e8e8;
+        min-height: 1.5em;
+        margin-bottom: 12px;
+      }
+      .ut-stage.err { color: #ff4141; }
+      .ut-meter {
+        width: min(420px, 70vw);
+        height: 12px;
+        border: 2px solid #555;
+        background: #111;
+        padding: 1px;
+      }
+      #utMeterFill {
+        height: 100%;
+        width: 0%;
+        background: #ff0000;
+        transition: width .18s ease;
+      }
+      .ut-pct {
+        margin-top: 8px;
+        font-size: clamp(12px, 1.8vw, 15px);
+        color: #9a9a9a;
+      }
+      .ut-tip {
+        margin-top: 26px;
+        font-size: clamp(12px, 1.9vw, 15px);
+        color: #cfcfcf;
+        min-height: 1.4em;
+        font-style: italic;
+      }
+      #utRetry {
+        margin-top: 22px;
+        font-family: inherit;
+        font-size: 15px;
+        letter-spacing: .2em;
+        padding: 10px 34px;
+        background: #000;
+        color: #fff;
+        border: 2px solid #fff;
+        cursor: pointer;
+      }
+      #utRetry:hover { background: #fff; color: #000; }
+      .ut-credit {
+        position: absolute;
+        bottom: 18px;
+        left: 0; right: 0;
+        text-align: center;
+        font-size: 12px;
+        letter-spacing: .25em;
+        color: #6f6f6f;
+      }
+
+      /* ---- soul selector ---- */
+      #ssCurrent {
+        font-size: 13px;
+        color: #8f8f8f;
+        margin-bottom: 14px;
+        letter-spacing: .12em;
+      }
+      #ssHearts {
+        display: flex;
+        gap: clamp(10px, 2.6vw, 26px);
+        justify-content: center;
+        align-items: flex-end;
+        margin: 10px 0 34px;
+        min-height: 74px;
+      }
+      .ss-heart {
+        background: none;
+        border: none;
+        padding: 6px;
+        cursor: pointer;
+        opacity: .55;
+        transition: transform .12s ease, opacity .12s ease, filter .12s ease;
+        filter: drop-shadow(0 0 0 transparent);
+      }
+      .ss-heart:hover { opacity: .9; }
+      .ss-heart.selected {
+        opacity: 1;
+        filter: drop-shadow(0 0 16px currentColor);
+      }
+      #ssName {
+        font-size: clamp(20px, 3.6vw, 30px);
+        letter-spacing: .3em;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      .ss-tag {
+        font-size: 12px;
+        letter-spacing: .35em;
+        margin-bottom: 14px;
+        opacity: .9;
+      }
+      .ss-desc {
+        font-size: clamp(13px, 2vw, 16px);
+        color: #c9c9c9;
+        max-width: 520px;
+        line-height: 1.55;
+        min-height: 3.2em;
+      }
+      .ss-hint {
+        margin-top: 30px;
+        font-size: 12px;
+        letter-spacing: .15em;
+        color: #7c7c7c;
+      }
